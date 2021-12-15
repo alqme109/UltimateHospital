@@ -58,6 +58,11 @@ public class Hospital {
     Statement st = conn.createStatement();
 
     st.execute("SET FOREIGN_KEY_CHECKS = 0;");
+    try {
+      st.execute("drop index date_index on Appointments");
+    } catch (Exception ex) {
+      // ignore, no index initialized prior to running
+    }
     drop_table(conn, "Patients");
     drop_table(conn, "Doctors");
     drop_table(conn, "Appointments");
@@ -117,7 +122,7 @@ public class Hospital {
         "\tconstraint fk\n" +
         "\t\tforeign key (patient_id) references Patients (id),\n" +
         "\tconstraint fk2\n" +
-        "\t\tforeign key (prescription_id) references Prescriptions (id)\n" +
+        "\t\tforeign key (prescription_id) references Appointments (id)\n" +
         ");");
 
     st.executeUpdate(patients);
@@ -125,6 +130,10 @@ public class Hospital {
     st.executeUpdate(appointments);
     st.executeUpdate(prescriptions);
     st.executeUpdate(bills);
+
+    // create index on date attribute of Appointments
+    st.execute("create index date_index on Appointments (date)");
+
   } /* _initTables() */
 
   static void showTable(Connection conn, String tableName, String query) throws SQLException {
@@ -136,7 +145,7 @@ public class Hospital {
     //create frame
     JFrame frame = new JFrame("Ultimate Hospital Database");
     frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-    frame.setSize(1000,300);
+    frame.setSize(1000, 300);
 
     //run sql to select a whole table
     Statement statement = conn.createStatement();
@@ -147,7 +156,7 @@ public class Hospital {
     String[] columns = new String[resultSetMetaData.getColumnCount()];
 
     for (int i = 0; i < columns.length; i++) {
-      columns[i] = resultSetMetaData.getColumnName(i+1);
+      columns[i] = resultSetMetaData.getColumnName(i + 1);
     }
 
     Object[][] data = new Object[maxEntries][columns.length];
@@ -166,7 +175,7 @@ public class Hospital {
     JScrollPane scrollPane = new JScrollPane(table);
     table.setFillsViewportHeight(true);
 
-    JLabel heading = new JLabel(tableName + "(" + numEntries + " entries)");
+    JLabel heading = new JLabel(tableName + " (" + numEntries + " entries)");
 
     frame.getContentPane().setLayout(new BorderLayout());
     frame.getContentPane().add(heading, BorderLayout.PAGE_START);
@@ -256,6 +265,7 @@ public class Hospital {
     JButton insertRow = new JButton("Insert into \"" + tableName + "\"");
     JButton deleteRow = new JButton("Delete from \"" + tableName + "\"");
     JButton searchRow = new JButton("Search \"" + tableName + "\"");
+    JButton todaysAppointments = new JButton("See all today's appointments");
 
     JTextField[] textBoxes = new JTextField[columns.length];
 
@@ -270,6 +280,9 @@ public class Hospital {
     modPanel.add(insertRow);
     modPanel.add(deleteRow);
     modPanel.add(searchRow);
+    if (tableName.equals("Appointments")) {
+      modPanel.add(todaysAppointments);
+    }
 
     //implementation for insertRow button
     insertRow.addActionListener(new ActionListener() {
@@ -619,6 +632,91 @@ public class Hospital {
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
+      }
+    });
+
+    todaysAppointments.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        try {
+          java.sql.Date currentDate = new java.sql.Date(Calendar.getInstance().getTime().getTime());
+          openTableWindow(conn, tableName, "Today's Appointments",  "select * from Appointments where date = \"" + currentDate + "\"");
+        } catch (SQLException ex) {
+          ex.printStackTrace();
+        }
+      }
+    });
+
+    //put the button panels onto the main panel
+    mainPanel.setLayout(new BorderLayout());
+    mainPanel.add(showPanel, BorderLayout.PAGE_START);
+    mainPanel.add(modPanel, BorderLayout.PAGE_END);
+    mainPanel.add(fieldsPanel, BorderLayout.CENTER);
+
+    //put the main panel onto the frame
+    frame.getContentPane().add(mainPanel, BorderLayout.PAGE_END);
+
+    //show GUI
+    frame.setVisible(true);
+  }
+
+  static void openTableWindow(Connection conn, String tableName, String title, String query) throws SQLException {
+    // handle "" default query parameter
+    if (query.equals("")) {
+      query = "select * from " + tableName;
+    }
+
+    //create frame
+    JFrame frame = new JFrame("Ultimate Hospital Database");
+    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    frame.setSize(1000, 300);
+
+    //run sql to select a whole table
+    Statement statement = conn.createStatement();
+    ResultSet resultSet = statement.executeQuery(query);
+    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+    //build out the table that will be inserted into the GUI
+    String[] columns = new String[resultSetMetaData.getColumnCount()];
+
+    for (int i = 0; i < columns.length; i++) {
+      columns[i] = resultSetMetaData.getColumnName(i + 1);
+    }
+
+    Object[][] data = new Object[maxEntries][columns.length];
+
+    int numEntries = 0;
+
+    while (resultSet.next()) {
+      for (int i = 0; i < columns.length; i++) {
+        data[numEntries][i] = resultSet.getString(columns[i]);
+      }
+      numEntries++;
+    }
+
+    //put the table into GUI
+    JTable table = new JTable(data, columns);
+    JScrollPane scrollPane = new JScrollPane(table);
+    table.setFillsViewportHeight(true);
+
+    JLabel heading = new JLabel(title + " (" + numEntries + " entries)");
+
+    frame.getContentPane().setLayout(new BorderLayout());
+    frame.getContentPane().add(heading, BorderLayout.PAGE_START);
+    frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
+
+    JPanel mainPanel = new JPanel();
+    JPanel showPanel = new JPanel();
+    JPanel modPanel = new JPanel();
+    JPanel fieldsPanel = new JPanel();
+
+    //Buttons to insert or delete from the current table
+    JButton closeButton = new JButton("Close");
+
+    modPanel.add(closeButton);
+
+    closeButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        frame.dispose();
       }
     });
 
