@@ -14,7 +14,7 @@ public class Hospital {
   static int maxEntries = 10;
 
   public static void main(String[] args) throws SQLException, ParseException {
-    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
     _buildTables(conn);
 
 
@@ -44,7 +44,7 @@ public class Hospital {
 
 
     //Starts the GUI by showing the Patients
-    showTable(conn, "Patients");
+    showTable(conn, "Patients", "");
 
   }
 
@@ -127,7 +127,11 @@ public class Hospital {
     st.executeUpdate(bills);
   } /* _initTables() */
 
-  static void showTable(Connection conn, String tableName) throws SQLException {
+  static void showTable(Connection conn, String tableName, String query) throws SQLException {
+    // handle "" default query parameter
+    if (query.equals("")) {
+      query = "select * from " + tableName;
+    }
 
     //create frame
     JFrame frame = new JFrame("Ultimate Hospital Database");
@@ -136,7 +140,7 @@ public class Hospital {
 
     //run sql to select a whole table
     Statement statement = conn.createStatement();
-    ResultSet resultSet = statement.executeQuery("select * from " + tableName);
+    ResultSet resultSet = statement.executeQuery(query);
     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
     //build out the table that will be inserted into the GUI
@@ -162,7 +166,7 @@ public class Hospital {
     JScrollPane scrollPane = new JScrollPane(table);
     table.setFillsViewportHeight(true);
 
-    JLabel heading = new JLabel(tableName);
+    JLabel heading = new JLabel(tableName + "(" + numEntries + " entries)");
 
     frame.getContentPane().setLayout(new BorderLayout());
     frame.getContentPane().add(heading, BorderLayout.PAGE_START);
@@ -180,7 +184,7 @@ public class Hospital {
       public void actionPerformed(ActionEvent e) {
         try {
           frame.dispose();
-          showTable(conn, "Patients");
+          showTable(conn, "Patients", "");
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -192,7 +196,7 @@ public class Hospital {
       public void actionPerformed(ActionEvent e) {
         try {
           frame.dispose();
-          showTable(conn, "Doctors");
+          showTable(conn, "Doctors", "");
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -204,7 +208,7 @@ public class Hospital {
       public void actionPerformed(ActionEvent e) {
         try {
           frame.dispose();
-          showTable(conn, "Appointments");
+          showTable(conn, "Appointments", "");
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -216,7 +220,7 @@ public class Hospital {
       public void actionPerformed(ActionEvent e) {
         try {
           frame.dispose();
-          showTable(conn, "Prescriptions");
+          showTable(conn, "Prescriptions", "");
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -228,7 +232,7 @@ public class Hospital {
       public void actionPerformed(ActionEvent e) {
         try {
           frame.dispose();
-          showTable(conn, "Bills");
+          showTable(conn, "Bills", "");
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -251,6 +255,7 @@ public class Hospital {
     //Buttons to insert or delete from the current table
     JButton insertRow = new JButton("Insert into \"" + tableName + "\"");
     JButton deleteRow = new JButton("Delete from \"" + tableName + "\"");
+    JButton searchRow = new JButton("Search \"" + tableName + "\"");
 
     JTextField[] textBoxes = new JTextField[columns.length];
 
@@ -264,6 +269,7 @@ public class Hospital {
     //add insert and delete buttons to modPanel
     modPanel.add(insertRow);
     modPanel.add(deleteRow);
+    modPanel.add(searchRow);
 
     //implementation for insertRow button
     insertRow.addActionListener(new ActionListener() {
@@ -298,7 +304,7 @@ public class Hospital {
               break;
           }
           frame.dispose();
-          showTable(conn, tableName);
+          showTable(conn, tableName, "");
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -328,7 +334,288 @@ public class Hospital {
               break;
           }
           frame.dispose();
-          showTable(conn, tableName);
+          showTable(conn, tableName, "");
+        } catch (SQLException ex) {
+          ex.printStackTrace();
+        }
+      }
+    });
+
+    //implementation for searchRow button
+    searchRow.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        try {
+          switch (tableName) {
+            case "Patients":
+              String catStr = "";
+              int c = 0;
+              if (!textBoxes[0].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[0].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  catStr = "id = " + textBoxes[0].getText();
+                  c++;
+                }
+              }
+              if (!textBoxes[1].getText().equals("")) {
+                if (c == 0) {
+                  catStr = "full_name = \"" + textBoxes[1].getText() + "\"";
+                }
+                else {
+                  catStr += " and full_name = \"" + textBoxes[1].getText() + "\"";
+                }
+                c++;
+              }
+              if (!textBoxes[2].getText().equals("")) {
+                if (c == 0) {
+                  catStr = "email_address = \"" + textBoxes[2].getText() + "\"";
+                }
+                else {
+                  catStr += " and email_address = \"" + textBoxes[2].getText() + "\"";
+                }
+                c++;
+              }
+              if (!textBoxes[3].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[3].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  if (c == 0) {
+                    catStr = "number_of_completed_appointments = " + textBoxes[3].getText();
+                  } else {
+                    catStr += " and number_of_completed_appointments = " + textBoxes[3].getText();
+                  }
+                  c++;
+                }
+              }
+              if (!catStr.equals("")) {
+                frame.dispose();
+                showTable(conn, tableName, "select * from " + tableName + " where " + catStr);
+              }
+              break;
+            case "Doctors":
+              String catStr2 = "";
+              int c2 = 0;
+              if (!textBoxes[0].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[0].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  catStr2 = "id = " + textBoxes[0].getText();
+                  c2++;
+                }
+              }
+              if (!textBoxes[1].getText().equals("")) {
+                if (c2 == 0) {
+                  catStr2 = "full_name = \"" + textBoxes[1].getText() + "\"";
+                }
+                else {
+                  catStr2 += " and full_name = \"" + textBoxes[1].getText() + "\"";
+                }
+                c2++;
+              }
+              if (!textBoxes[2].getText().equals("")) {
+                if (c2 == 0) {
+                  catStr2 = "email_address = \"" + textBoxes[2].getText() + "\"";
+                }
+                else {
+                  catStr2 += " and email_address = \"" + textBoxes[2].getText() + "\"";
+                }
+                c2++;
+              }
+              if (!textBoxes[3].getText().equals("")) {
+                if (c2 == 0) {
+                  catStr2 = "specialty = \"" + textBoxes[3].getText() + "\"";
+                } else {
+                  catStr2 += " and specialty = \"" + textBoxes[3].getText() + "\"";
+                }
+                c2++;
+              }
+              if (!catStr2.equals("")) {
+                frame.dispose();
+                showTable(conn, tableName, "select * from " + tableName + " where " + catStr2);
+              }
+              break;
+            case "Appointments":
+              String catStr3 = "";
+              int c3 = 0;
+              if (!textBoxes[0].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[0].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  catStr3 = "id = " + textBoxes[0].getText();
+                  c3++;
+                }
+              }
+              if (!textBoxes[1].getText().equals("")) {
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                if (c3 == 0) {
+                  catStr3 = "date = \"" + textBoxes[1].getText() + "\"";
+                }
+                else {
+                  catStr3 += " and date = \"" + textBoxes[1].getText() + "\"";
+                }
+                c3++;
+              }
+              if (!textBoxes[2].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[2].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  if (c3 == 0) {
+                    catStr3 = "Appointments.order = " + textBoxes[2].getText();
+                  } else {
+                    catStr3 += " and Appointments.order = " + textBoxes[2].getText();
+                  }
+                  c3++;
+                }
+              }
+              if (!textBoxes[3].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[3].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  if (c3 == 0) {
+                    catStr3 = "patient_id = " + textBoxes[3].getText();
+                  } else {
+                    catStr3 += " and patient_id = " + textBoxes[3].getText();
+                  }
+                  c3++;
+                }
+              }
+              if (!textBoxes[4].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[4].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  if (c3 == 0) {
+                    catStr3 = "doctor_id = " + textBoxes[4].getText();
+                  } else {
+                    catStr3 += " and doctor_id = " + textBoxes[4].getText();
+                  }
+                  c3++;
+                }
+              }
+              if (!catStr3.equals("")) {
+                System.out.println(catStr3 + " ~~ " + c3);
+                frame.dispose();
+                showTable(conn, tableName, "select * from " + tableName + " where " + catStr3);
+              }
+              break;
+            case "Prescriptions":
+              String catStr4 = "";
+              int c4 = 0;
+              if (!textBoxes[0].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[0].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  catStr4 = "id = " + textBoxes[0].getText();
+                  c4++;
+                }
+              }
+              if (!textBoxes[1].getText().equals("")) {
+                if (c4 == 0) {
+                  catStr4 = "name = \"" + textBoxes[1].getText() + "\"";
+                } else {
+                  catStr4 += " and name = \"" + textBoxes[1].getText() + "\"";
+                }
+                c4++;
+              }
+              if (!textBoxes[2].getText().equals("")) {
+                if (c4 == 0) {
+                  catStr4 = "price = \"" + textBoxes[2].getText() + "\"";
+                } else {
+                  catStr4 += " and price = \"" + textBoxes[2].getText() + "\"";
+                }
+                c4++;
+              }
+              if (!catStr4.equals("")) {
+                frame.dispose();
+                showTable(conn, tableName, "select * from " + tableName + " where " + catStr4);
+              }
+              break;
+            case "Bills":
+              String catStr5 = "";
+              int c5 = 0;
+              if (!textBoxes[0].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[0].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  catStr5 = "patient_id = " + textBoxes[0].getText();
+                  c5++;
+                }
+              }
+              if (!textBoxes[1].getText().equals("")) {
+                boolean failed = false;
+                try {
+                  Integer.parseInt(textBoxes[1].getText());
+                } catch (NumberFormatException ex) {
+                  failed = true;
+                  ex.printStackTrace();
+                }
+                if (!failed) {
+                  if (c5 == 0) {
+                    catStr5 = "prescription_id = " + textBoxes[1].getText();
+                  } else {
+                    catStr5 += " and prescription_id = " + textBoxes[1].getText();
+                  }
+                  c5++;
+                }
+              }
+              if (!textBoxes[2].getText().equals("")) {
+                if (c5 == 0) {
+                  catStr5 = "paid = " + Boolean.parseBoolean(textBoxes[2].getText());
+                } else {
+                  catStr5 += " and paid = " + Boolean.parseBoolean(textBoxes[2].getText());
+                }
+                c5++;
+              }
+              if (!catStr5.equals("")) {
+                frame.dispose();
+                showTable(conn, tableName, "select * from " + tableName + " where " + catStr5);
+              }
+              break;
+          }
         } catch (SQLException ex) {
           ex.printStackTrace();
         }
@@ -348,8 +635,9 @@ public class Hospital {
     frame.setVisible(true);
   }
 
+
   public static int getNextId(String table) throws SQLException {
-    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
     Statement st = conn.createStatement();
 
     String query = "SELECT MAX(id) FROM " + table + ";";

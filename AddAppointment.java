@@ -21,7 +21,7 @@ public class AddAppointment {
     frame.pack();
     frame.setVisible(true);
 
-    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+    Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
 
 
     ArrayList<Availability> availabilites = Appointments.findAllAvailabilities(conn);

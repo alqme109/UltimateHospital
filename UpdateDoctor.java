@@ -33,7 +33,7 @@ public class UpdateDoctor {
 
         Connection conn = null;
         try {
-          conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+          conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
           Doctors.updateInfo(conn, id, first_name,email_address,specialty);
         } catch (SQLException e) {
           e.printStackTrace();

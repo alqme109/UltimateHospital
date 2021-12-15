@@ -33,7 +33,7 @@ public class AddDoctor {
 
         Connection conn = null;
         try {
-          conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+          conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
           newDoctor.addDoctor(conn);
         } catch (SQLException e) {
           e.printStackTrace();

@@ -19,7 +19,7 @@ public class Availability {
   public String toString() {
     Connection conn = null;
     try {
-      conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+      conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
     } catch (SQLException e) {
       e.printStackTrace();
     }
