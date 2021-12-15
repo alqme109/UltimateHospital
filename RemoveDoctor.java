@@ -25,7 +25,7 @@ public class RemoveDoctor {
 
         Connection conn = null;
         try {
-          conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", "password");
+          conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/Hospital", "root", HospitalConstants.password);
           Doctors.removeDoctor(conn, id);
         } catch (SQLException e) {
           e.printStackTrace();
